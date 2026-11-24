@@ -1,0 +1,6 @@
+__pycache__/
+*.pyc
+data/app.db
+data/uploads/
+models/tomato_cnn_v*.h5
+.venv/

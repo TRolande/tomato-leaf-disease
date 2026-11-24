@@ -1,0 +1,353 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tomato Leaf Check</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@500;700&family=Public+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root {
+  --bg: #eef2ec; --panel: #ffffff; --ink: #14261c; --muted: #5a6b60; --line: #cfd9cb;
+  --rail: #14261c; --rail-ink: #e6efe2; --rail-muted: #9db3a3;
+  --leaf: #3f8f4e; --tomato: #c4372a; --focus: #1d6fd6;
+  --font-head: "Familjen Grotesk", "Trebuchet MS", system-ui, sans-serif;
+  --font-body: "Public Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --bg: #0f1a14; --panel: #17261d; --ink: #e6efe2; --muted: #9db3a3; --line: #2a3d31; --rail: #0a120d; }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font-body); line-height: 1.5; }
+button, select, input { font: inherit; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+.layout { display: grid; grid-template-columns: 280px 1fr; min-height: 100vh; }
+.rail { background: var(--rail); color: var(--rail-ink); padding: 28px 22px; position: sticky; top: 0; height: 100vh; display: flex; flex-direction: column; gap: 26px; }
+.rail h1 { font-family: var(--font-head); font-size: 28px; line-height: 1.05; margin: 0; }
+.rail p { margin: 6px 0 0; color: var(--rail-muted); font-size: 14px; }
+.nav { display: flex; flex-direction: column; gap: 6px; }
+.nav button { text-align: left; background: transparent; color: var(--rail-ink); border: 1px solid transparent; border-radius: 8px; padding: 10px 12px; cursor: pointer; font-weight: 500; }
+.nav button:hover { border-color: #2f4a38; }
+.nav button[aria-selected="true"] { background: #e6efe2; color: #14261c; }
+.status { margin-top: auto; border-top: 1px solid #2a3d31; padding-top: 18px; font-size: 14px; }
+.status dl { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 6px 12px; }
+.status dt { color: var(--rail-muted); }
+.status dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; }
+.dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: #e0a526; margin-right: 6px; }
+.dot.up { background: #58c46d; } .dot.down { background: #e5513f; }
+main { padding: 36px clamp(18px, 4vw, 56px); max-width: 1100px; }
+h2 { font-family: var(--font-head); font-size: 30px; margin: 0 0 6px; }
+.lead { color: var(--muted); margin: 0 0 24px; max-width: 62ch; }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 22px; margin-bottom: 20px; }
+.panel h3 { font-family: var(--font-head); font-size: 20px; margin: 0 0 12px; }
+.row { display: flex; gap: 14px; flex-wrap: wrap; align-items: center; }
+.btn { background: var(--ink); color: var(--bg); border: 0; border-radius: 8px; padding: 11px 20px; font-weight: 600; cursor: pointer; }
+.btn:disabled { opacity: .45; cursor: not-allowed; }
+.btn.alt { background: var(--tomato); color: #fff; }
+input[type=file], select { background: var(--bg); color: var(--ink); border: 1px solid var(--line); border-radius: 8px; padding: 9px 12px; max-width: 100%; }
+.predict { display: grid; grid-template-columns: minmax(200px, 300px) 1fr; gap: 24px; align-items: start; }
+.preview { width: 100%; aspect-ratio: 1; border-radius: 10px; background: var(--bg); border: 1px dashed var(--line); display: grid; place-items: center; color: var(--muted); overflow: hidden; text-align: center; padding: 10px; }
+.preview img { width: 100%; height: 100%; object-fit: cover; }
+.verdict { font-family: var(--font-head); font-size: 34px; line-height: 1.1; margin: 0; }
+.conf { color: var(--muted); margin: 4px 0 16px; }
+.bar { display: grid; grid-template-columns: 120px 1fr 56px; gap: 10px; align-items: center; font-size: 14px; margin: 7px 0; }
+.bar .track { background: var(--bg); border-radius: 6px; height: 12px; overflow: hidden; }
+.bar .fill { height: 100%; border-radius: 6px; }
+.bar span:last-child { text-align: right; font-variant-numeric: tabular-nums; }
+.charts { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 20px; }
+.chartbox { position: relative; height: 230px; }
+.story { color: var(--muted); font-size: 15px; margin: 12px 0 0; }
+.steps { counter-reset: step; list-style: none; padding: 0; margin: 0; }
+.steps > li { counter-increment: step; position: relative; padding-left: 48px; margin-bottom: 26px; }
+.steps > li::before { content: counter(step); position: absolute; left: 0; top: 0; width: 32px; height: 32px; border-radius: 50%; background: var(--ink); color: var(--bg); display: grid; place-items: center; font-family: var(--font-head); font-weight: 700; }
+table { width: 100%; border-collapse: collapse; font-size: 14px; font-variant-numeric: tabular-nums; }
+th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); }
+th { color: var(--muted); font-weight: 600; }
+.msg { margin-top: 12px; font-size: 14px; }
+.msg.err { color: var(--tomato); font-weight: 600; }
+.progress { height: 12px; background: var(--bg); border-radius: 6px; overflow: hidden; margin: 12px 0 6px; }
+.progress > div { height: 100%; width: 0; background: var(--leaf); transition: width .4s; }
+.hidden { display: none; }
+@media (max-width: 860px) {
+  .layout { grid-template-columns: 1fr; }
+  .rail { position: static; height: auto; }
+  .nav { flex-direction: row; flex-wrap: wrap; }
+  .predict { grid-template-columns: 1fr; }
+}
+@media (prefers-reduced-motion: reduce) { .progress > div { transition: none; } }
+</style>
+</head>
+<body>
+<div class="layout">
+  <aside class="rail">
+    <div>
+      <h1>Tomato Leaf Check</h1>
+      <p>Spot early blight, late blight and leaf mold from a photo.</p>
+    </div>
+    <div class="nav" role="tablist" aria-label="Sections">
+      <button role="tab" aria-selected="true" data-tab="predict">Check a leaf</button>
+      <button role="tab" aria-selected="false" data-tab="insights">Data insights</button>
+      <button role="tab" aria-selected="false" data-tab="retrain">Upload and retrain</button>
+    </div>
+    <div class="status" aria-live="polite">
+      <dl>
+        <dt>Service</dt><dd><span id="dot" class="dot"></span><span id="state">Connecting</span></dd>
+        <dt>Uptime</dt><dd id="uptime">-</dd>
+        <dt>Model</dt><dd id="modelv">-</dd>
+        <dt>Test accuracy</dt><dd id="acc">-</dd>
+        <dt>Container</dt><dd id="container">-</dd>
+      </dl>
+    </div>
+  </aside>
+
+  <main>
+    <!-- PREDICT -->
+    <section id="tab-predict">
+      <h2>Check a leaf</h2>
+      <p class="lead">Upload one photo of a tomato leaf. The model returns the most likely condition and how sure it is.</p>
+      <div class="panel predict">
+        <div>
+          <div class="preview" id="preview">No image chosen</div>
+        </div>
+        <div>
+          <div class="row">
+            <input type="file" id="predFile" accept="image/*" aria-label="Leaf photo">
+            <button class="btn" id="predBtn" disabled>Predict condition</button>
+          </div>
+          <div id="predOut" class="hidden" style="margin-top:22px">
+            <p class="verdict" id="verdict"></p>
+            <p class="conf" id="conf"></p>
+            <div id="bars"></div>
+          </div>
+          <p class="msg err" id="predErr"></p>
+        </div>
+      </div>
+    </section>
+
+    <!-- INSIGHTS -->
+    <section id="tab-insights" class="hidden">
+      <h2>Data insights</h2>
+      <p class="lead">What the training photos look like, class by class. Values are medians of a fixed sample of <span id="sampleN">60</span> images per class.</p>
+      <div class="charts">
+        <div class="panel"><h3>Images per class</h3><div class="chartbox"><canvas id="c1"></canvas></div><p class="story" id="s1"></p></div>
+        <div class="panel"><h3>Average colour (0 to 255)</h3><div class="chartbox"><canvas id="c2"></canvas></div><p class="story" id="s2"></p></div>
+        <div class="panel"><h3>Brightness (0 to 255)</h3><div class="chartbox"><canvas id="c3"></canvas></div><p class="story" id="s3"></p></div>
+        <div class="panel"><h3>Texture (spread of grey values)</h3><div class="chartbox"><canvas id="c4"></canvas></div><p class="story" id="s4"></p></div>
+      </div>
+    </section>
+
+    <!-- RETRAIN -->
+    <section id="tab-retrain" class="hidden">
+      <h2>Upload and retrain</h2>
+      <p class="lead">Add labelled photos, then retrain the model on them. Uploads are stored in the database until they are used.</p>
+      <ol class="steps">
+        <li>
+          <div class="panel">
+            <h3>Upload new photos</h3>
+            <div class="row">
+              <label>Class of these photos <select id="upLabel"></select></label>
+              <input type="file" id="upFiles" accept="image/*" multiple aria-label="Photos to upload">
+              <button class="btn" id="upBtn" disabled>Upload photos</button>
+            </div>
+            <p class="msg" id="upMsg"></p>
+            <table id="upTable"><thead><tr><th>Class</th><th>Waiting to train</th><th>Already used</th></tr></thead><tbody></tbody></table>
+          </div>
+        </li>
+        <li>
+          <div class="panel">
+            <h3>Retrain the model</h3>
+            <p class="story" style="margin-top:0">Continues training the current model on all waiting photos, then measures it on the untouched test set.</p>
+            <button class="btn alt" id="rtBtn">Retrain model</button>
+            <div class="progress hidden" id="rtProg"><div id="rtBar"></div></div>
+            <p class="msg" id="rtMsg"></p>
+            <table id="rtTable" class="hidden"><thead><tr><th>Test set</th><th>Accuracy</th><th>Precision</th><th>Recall</th><th>F1</th><th>Loss</th></tr></thead><tbody></tbody></table>
+          </div>
+        </li>
+        <li>
+          <div class="panel">
+            <h3>Model versions</h3>
+            <table id="histTable"><thead><tr><th>Version</th><th>Accuracy</th><th>F1</th><th>New photos used</th><th>Live</th></tr></thead><tbody></tbody></table>
+          </div>
+        </li>
+      </ol>
+    </section>
+  </main>
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const COLORS = { Tomato_Early_blight: "#c2762b", Tomato_Late_blight: "#8a3b5a", Tomato_Leaf_Mold: "#7a8f2a", Tomato_healthy: "#3f8f4e" };
+const pretty = (n) => n.replace(/^Tomato_/, "").replace(/_/g, " ").replace(/^./, (c) => c.toUpperCase());
+const pct = (x) => (x * 100).toFixed(1) + "%";
+let classes = [];
+
+async function api(path, opts) {
+  const res = await fetch(path, opts);
+  let body = null;
+  try { body = await res.json(); } catch (e) {}
+  if (!res.ok) throw new Error((body && body.detail) || "Request failed (" + res.status + ")");
+  return body;
+}
+
+/* ---------- tabs ---------- */
+let insightsLoaded = false;
+document.querySelectorAll(".nav button").forEach((b) => b.addEventListener("click", () => {
+  document.querySelectorAll(".nav button").forEach((x) => x.setAttribute("aria-selected", x === b));
+  ["predict", "insights", "retrain"].forEach((t) => $("tab-" + t).classList.toggle("hidden", t !== b.dataset.tab));
+  if (b.dataset.tab === "insights" && !insightsLoaded) loadInsights();
+  if (b.dataset.tab === "retrain") { refreshUploads(); refreshHistory(); }
+}));
+
+/* ---------- status / uptime ---------- */
+let upBase = 0, upAt = 0, online = false;
+function fmtUp(s) {
+  s = Math.floor(s);
+  const d = Math.floor(s / 86400), h = Math.floor(s % 86400 / 3600), m = Math.floor(s % 3600 / 60), sec = s % 60;
+  const p = (n) => String(n).padStart(2, "0");
+  return (d ? d + "d " : "") + p(h) + ":" + p(m) + ":" + p(sec);
+}
+async function pollHealth() {
+  try {
+    const h = await api("/api/health");
+    upBase = h.uptime_seconds; upAt = Date.now(); online = true;
+    $("dot").className = "dot up"; $("state").textContent = "Online";
+    $("modelv").textContent = "v" + h.model_version;
+    $("acc").textContent = h.model_accuracy ? pct(h.model_accuracy) : "-";
+    $("container").textContent = h.container;
+  } catch (e) { online = false; $("dot").className = "dot down"; $("state").textContent = "Offline"; }
+}
+setInterval(() => { if (online) $("uptime").textContent = fmtUp(upBase + (Date.now() - upAt) / 1000); }, 1000);
+pollHealth(); setInterval(pollHealth, 5000);
+
+/* ---------- predict ---------- */
+$("predFile").addEventListener("change", () => {
+  const f = $("predFile").files[0];
+  $("predBtn").disabled = !f; $("predErr").textContent = ""; $("predOut").classList.add("hidden");
+  if (f) { const img = document.createElement("img"); img.alt = "Chosen leaf photo"; img.src = URL.createObjectURL(f); $("preview").replaceChildren(img); }
+});
+$("predBtn").addEventListener("click", async () => {
+  const fd = new FormData(); fd.append("file", $("predFile").files[0]);
+  $("predBtn").disabled = true; $("predBtn").textContent = "Checking...";
+  try {
+    const r = await api("/api/predict", { method: "POST", body: fd });
+    $("verdict").textContent = pretty(r.label);
+    $("conf").textContent = "Confidence " + pct(r.confidence);
+    $("bars").replaceChildren(...Object.entries(r.probabilities).sort((a, b) => b[1] - a[1]).map(([n, p]) => {
+      const row = document.createElement("div"); row.className = "bar";
+      row.innerHTML = `<span>${pretty(n)}</span><div class="track"><div class="fill" style="width:${p * 100}%;background:${COLORS[n] || "#888"}"></div></div><span>${pct(p)}</span>`;
+      return row;
+    }));
+    $("predOut").classList.remove("hidden"); $("predErr").textContent = "";
+  } catch (e) { $("predErr").textContent = e.message; }
+  $("predBtn").disabled = false; $("predBtn").textContent = "Predict condition";
+});
+
+/* ---------- insights ---------- */
+let charts = [];
+function chart(id, type, labels, datasets, extra) {
+  return new Chart($(id), { type, data: { labels, datasets },
+    options: Object.assign({ responsive: true, maintainAspectRatio: false, plugins: { legend: { display: datasets.length > 1 } } }, extra || {}) });
+}
+const maxOf = (a) => a.indexOf(Math.max(...a)), minOf = (a) => a.indexOf(Math.min(...a));
+async function loadInsights() {
+  let d;
+  try { d = await api("/api/insights"); } catch (e) { $("s1").textContent = e.message; return; }
+  insightsLoaded = true; charts.forEach((c) => c.destroy()); charts = [];
+  const names = d.classes.map(pretty), cols = d.classes.map((c) => COLORS[c] || "#888");
+  $("sampleN").textContent = d.sample_size;
+  charts.push(chart("c1", "bar", names, [{ data: d.count, backgroundColor: cols }]));
+  charts.push(chart("c2", "bar", names, [
+    { label: "Red", data: d.mean_r, backgroundColor: "#d65a4a" },
+    { label: "Green", data: d.mean_g, backgroundColor: "#4f9a58" },
+    { label: "Blue", data: d.mean_b, backgroundColor: "#4a7fc4" }]));
+  charts.push(chart("c3", "bar", names, [{ data: d.brightness, backgroundColor: cols }]));
+  charts.push(chart("c4", "bar", names, [{ data: d.texture, backgroundColor: cols }]));
+
+  const lo = Math.min(...d.count), hi = Math.max(...d.count);
+  $("s1").textContent = `Between ${lo} and ${hi} training images per class, so ` +
+    (hi / lo < 1.25 ? "the classes are balanced and accuracy is a fair measure." : "the classes are uneven; watch recall per class.");
+  const gaps = { red: d.mean_r, green: d.mean_g, blue: d.mean_b };
+  const [bigName, bigVals] = Object.entries(gaps).sort((a, b) => (Math.max(...b[1]) - Math.min(...b[1])) - (Math.max(...a[1]) - Math.min(...a[1])))[0];
+  $("s2").textContent = `The classes differ by at most ${(Math.max(...bigVals) - Math.min(...bigVals)).toFixed(1)} points on any channel (largest on ${bigName}). ` +
+    `Colour alone barely separates them, so the model has to learn the shape and pattern of the spots.`;
+  const b = d.brightness;
+  $("s3").textContent = `${pretty(d.classes[minOf(b)])} photos are the darkest (${Math.min(...b)}) and ${pretty(d.classes[maxOf(b)])} the brightest (${Math.max(...b)}). ` +
+    `Lighting varies between photos, which is why brightness changes are part of the training augmentation.`;
+  const t = d.texture;
+  $("s4").textContent = `${pretty(d.classes[maxOf(t)])} leaves have the highest texture (${Math.max(...t)}) and ${pretty(d.classes[minOf(t)])} the lowest (${Math.min(...t)}). ` +
+    `Lesions add contrast to the leaf surface, so texture helps tell diseased leaves from smooth ones.`;
+}
+
+/* ---------- upload & retrain ---------- */
+async function loadClasses() {
+  try { const m = await api("/api/model"); classes = m.classes;
+    $("upLabel").replaceChildren(...classes.map((c) => { const o = document.createElement("option"); o.value = c; o.textContent = pretty(c); return o; }));
+  } catch (e) {}
+}
+async function refreshUploads() {
+  try {
+    const u = await api("/api/uploads");
+    $("upTable").querySelector("tbody").innerHTML = classes.map((c) => {
+      const r = u.counts[c] || { pending: 0, used: 0 };
+      return `<tr><td>${pretty(c)}</td><td>${r.pending}</td><td>${r.used}</td></tr>`; }).join("");
+    $("rtBtn").disabled = u.pending === 0 && $("rtProg").classList.contains("hidden");
+  } catch (e) {}
+}
+async function refreshHistory() {
+  try {
+    const m = await api("/api/model");
+    $("histTable").querySelector("tbody").innerHTML = m.history.slice().reverse().map((v) =>
+      `<tr><td>v${v.id}</td><td>${v.accuracy != null ? pct(v.accuracy) : "-"}</td><td>${v.f1 != null ? v.f1.toFixed(3) : "-"}</td><td>${v.n_new_images}</td><td>${v.is_current ? "Yes" : ""}</td></tr>`).join("");
+  } catch (e) {}
+}
+$("upFiles").addEventListener("change", () => { $("upBtn").disabled = !$("upFiles").files.length; });
+$("upBtn").addEventListener("click", async () => {
+  const fd = new FormData(); fd.append("label", $("upLabel").value);
+  [...$("upFiles").files].forEach((f) => fd.append("files", f));
+  $("upBtn").disabled = true; $("upMsg").className = "msg"; $("upMsg").textContent = "Uploading...";
+  try {
+    const r = await api("/api/upload", { method: "POST", body: fd });
+    $("upMsg").textContent = `Saved ${r.saved} photo(s) as ${pretty($("upLabel").value)}.` +
+      (r.rejected.length ? ` Skipped ${r.rejected.length}: ${r.rejected.map((x) => x.file).join(", ")}.` : "");
+    $("upFiles").value = "";
+  } catch (e) { $("upMsg").className = "msg err"; $("upMsg").textContent = e.message; }
+  refreshUploads();
+});
+function metricRow(label, m) {
+  return `<tr><td>${label}</td><td>${pct(m.accuracy)}</td><td>${m.precision.toFixed(3)}</td><td>${m.recall.toFixed(3)}</td><td>${m.f1.toFixed(3)}</td><td>${m.loss.toFixed(3)}</td></tr>`;
+}
+let rtTimer = null;
+async function pollRetrain() {
+  try {
+    const s = await api("/api/retrain/status");
+    $("rtMsg").className = "msg" + (s.status === "error" ? " err" : ""); $("rtMsg").textContent = s.message || "";
+    if (s.status === "running") {
+      $("rtProg").classList.remove("hidden");
+      $("rtBar").style.width = Math.min(100, ((s.epoch || 0) / (s.total_epochs || 1)) * 100) + "%";
+      return;
+    }
+    clearInterval(rtTimer); rtTimer = null;
+    $("rtProg").classList.add("hidden"); $("rtBtn").disabled = false;
+    if (s.status === "done") {
+      $("rtTable").classList.remove("hidden");
+      $("rtTable").querySelector("tbody").innerHTML = metricRow("Before retraining", s.result.before) + metricRow("After retraining", s.result.after);
+      $("rtMsg").textContent = `Retrained on ${s.result.new_images} new photo(s). The new model is live.`;
+      insightsLoaded = false; pollHealth(); refreshHistory();
+    }
+    refreshUploads();
+  } catch (e) {}
+}
+$("rtBtn").addEventListener("click", async () => {
+  $("rtBtn").disabled = true; $("rtTable").classList.add("hidden");
+  try {
+    await api("/api/retrain", { method: "POST" });
+    $("rtProg").classList.remove("hidden"); $("rtBar").style.width = "0%";
+    rtTimer = setInterval(pollRetrain, 2000); pollRetrain();
+  } catch (e) { $("rtMsg").className = "msg err"; $("rtMsg").textContent = e.message; $("rtBtn").disabled = false; }
+});
+loadClasses().then(() => { refreshUploads(); refreshHistory(); });
+</script>
+</body>
+</html>

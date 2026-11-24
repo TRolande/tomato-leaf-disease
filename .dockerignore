@@ -1,0 +1,6 @@
+notebook/
+results/
+.git
+__pycache__
+data/app.db
+data/uploads/
