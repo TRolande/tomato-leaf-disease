@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Dataset · Tomato Leaf Check</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="static/styles.css?v=3">
+</head>
+<body>
+<header id="topbar" class="topbar"></header>
+
+<main class="page">
+  <div class="container">
+    <div class="page-head">
+      <div class="kicker">Training data</div>
+      <h1 class="page-title">What the model learned from</h1>
+      <p class="page-lead">Colour, brightness and texture of the training photos. Values are medians over a random sample of photos per class.</p>
+    </div>
+
+    <div class="card">
+      <div class="stat-row">
+        <div class="stat"><div class="stat-value" id="statPhotos">-</div><div class="stat-label">training photos</div></div>
+        <div class="stat"><div class="stat-value" id="statClasses">-</div><div class="stat-label">classes</div></div>
+        <div class="stat"><div class="stat-value" id="statSample">-</div><div class="stat-label">photos sampled per class for the statistics</div></div>
+      </div>
+    </div>
+
+    <div class="message is-error" id="datasetError" role="alert" hidden></div>
+
+    <div class="grid-2-equal section-gap" style="margin-top:28px">
+      <section class="card">
+        <h2 class="block-title">Photos per class</h2>
+        <p class="block-note">Every class is capped at the same size.</p>
+        <div class="chart-box"><canvas id="chartCount" role="img" aria-label="Bar chart of training photos per class"></canvas></div>
+        <p class="chart-caption" id="captionCount"></p>
+      </section>
+      <section class="card">
+        <h2 class="block-title">Average red, green and blue</h2>
+        <p class="block-note">Average pixel value per colour channel.</p>
+        <div class="chart-box"><canvas id="chartColour" role="img" aria-label="Grouped bar chart of average red, green and blue per class"></canvas></div>
+        <p class="chart-caption" id="captionColour"></p>
+      </section>
+      <section class="card">
+        <h2 class="block-title">Brightness</h2>
+        <p class="block-note">Median grey level of the photos. Lighting varies from photo to photo.</p>
+        <div class="chart-box"><canvas id="chartBrightness" role="img" aria-label="Bar chart of median brightness per class"></canvas></div>
+        <p class="chart-caption" id="captionBrightness"></p>
+      </section>
+      <section class="card">
+        <h2 class="block-title">Texture</h2>
+        <p class="block-note">Spread of grey values inside each photo. Lesions add contrast.</p>
+        <div class="chart-box"><canvas id="chartTexture" role="img" aria-label="Bar chart of median texture per class"></canvas></div>
+        <p class="chart-caption" id="captionTexture"></p>
+      </section>
+    </div>
+  </div>
+</main>
+
+<footer id="footer" class="footer"></footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js" crossorigin="anonymous"></script>
+<script src="static/common.js?v=3"></script>
+<script src="static/dataset.js?v=3"></script>
+</body>
+</html>

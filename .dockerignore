@@ -1,6 +1,11 @@
-notebook/
-results/
 .git
+.venv
 __pycache__
+*.pyc
 data/app.db
 data/uploads/
+results/
+notebook/
+locust/
+docker-compose*.yml
+Caddyfile

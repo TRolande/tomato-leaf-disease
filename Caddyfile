@@ -1,0 +1,19 @@
+# Caddy terminates HTTPS for $DOMAIN and gets/renews the certificate automatically (Let's Encrypt).
+# Everything behind it is plain HTTP on the private Docker network.
+{$DOMAIN} {
+	encode zstd gzip
+	request_body {
+		max_size 50MB
+	}
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		-Server
+	}
+	reverse_proxy web:80
+	log {
+		output stdout
+		format console
+	}
+}

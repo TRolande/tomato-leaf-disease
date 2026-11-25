@@ -1,0 +1,14 @@
+{
+  "id": "YOUR_KAGGLE_USERNAME/tomato-leaf-mobilenetv2",
+  "title": "Tomato Leaf Disease MobileNetV2",
+  "code_file": "tomato.ipynb",
+  "language": "python",
+  "kernel_type": "notebook",
+  "is_private": true,
+  "enable_gpu": true,
+  "enable_tpu": false,
+  "enable_internet": true,
+  "dataset_sources": ["arjuntejaswi/plant-village"],
+  "competition_sources": [],
+  "kernel_sources": []
+}

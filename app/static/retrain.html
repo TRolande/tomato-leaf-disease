@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Retrain · Tomato Leaf Check</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="static/styles.css?v=3">
+</head>
+<body>
+<header id="topbar" class="topbar"></header>
+
+<main class="page">
+  <div class="container">
+    <div class="page-head">
+      <div class="kicker">Model</div>
+      <h1 class="page-title">Retrain the model</h1>
+      <p class="page-lead">Retraining fine-tunes the classifier head on the photos that are waiting. The new version goes live when it finishes.</p>
+    </div>
+
+    <section class="card" aria-labelledby="runHeading">
+      <div class="retrain-top">
+        <div>
+          <h2 id="runHeading" class="block-title" style="margin-bottom:12px">Waiting photos</h2>
+          <div class="waiting-count" id="waitingCount">-</div>
+          <div class="waiting-caption" id="waitingCaption">Loading</div>
+        </div>
+        <button type="button" class="btn btn-primary" id="retrainButton" disabled>Retrain model</button>
+      </div>
+
+      <div class="confirm-box" id="confirmBox" hidden>
+        <p id="confirmText"></p>
+        <div class="confirm-actions">
+          <button type="button" class="btn btn-primary" id="confirmStart">Start retraining</button>
+          <button type="button" class="btn btn-ghost" id="confirmCancel">Cancel</button>
+        </div>
+      </div>
+
+      <div class="progress" id="progress" hidden>
+        <div class="progress-meta"><span id="progressEpoch"></span><span id="progressPercent"></span></div>
+        <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+        <div class="progress-msg" id="progressMessage"></div>
+        <div class="progress-msg" id="progressElapsed"></div>
+        <p class="progress-msg" style="margin-top:8px">This can take several minutes. You can leave this page: the run keeps going on the server, and the progress is here when you come back.</p>
+      </div>
+
+      <div class="live-chart" id="liveChartBox" hidden>
+        <div class="live-chart-head"><span>Validation accuracy by epoch</span><b id="liveValue"></b></div>
+        <svg id="liveChart" viewBox="0 0 300 90" preserveAspectRatio="none" role="img" aria-label="Line chart of validation accuracy for each epoch"></svg>
+      </div>
+      <div class="message is-error" id="retrainError" role="alert" hidden></div>
+    </section>
+
+    <section class="section-gap" id="resultSection" hidden aria-labelledby="resultHeading">
+      <h2 id="resultHeading" class="block-title">Last retraining</h2>
+      <p class="block-note" id="resultSummary"></p>
+      <div class="card" style="padding:8px 26px">
+        <div class="table-wrap">
+          <table class="data">
+            <thead><tr><th>Measure</th><th class="num">Before</th><th class="num">After</th><th class="num">Change</th></tr></thead>
+            <tbody id="resultBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section class="section-gap" aria-labelledby="versionsHeading">
+      <h2 id="versionsHeading" class="block-title">Model versions</h2>
+      <p class="block-note">Each retraining creates a version. The live version answers prediction requests.</p>
+      <div class="card">
+        <ol class="versions" id="versionsList"></ol>
+      </div>
+    </section>
+  </div>
+</main>
+
+<footer id="footer" class="footer"></footer>
+
+<script src="static/common.js?v=3"></script>
+<script src="static/retrain.js?v=3"></script>
+</body>
+</html>

@@ -1,0 +1,45 @@
+# Production stack: Caddy (HTTPS, public ports) -> nginx (static page + /api) -> FastAPI (model, database).
+# Usage:  cp .env.example .env   (set DOMAIN)   then   docker compose -f docker-compose.prod.yml up -d --build
+name: tomato-leaf
+
+services:
+  api:
+    build: .
+    restart: unless-stopped
+    expose: ["8000"]
+    volumes:
+      - app_data:/app/data          # database, uploaded photos (survive redeploys)
+      - app_models:/app/models      # retrained model versions (survive redeploys)
+    environment:
+      PYTHONUNBUFFERED: "1"
+
+  web:
+    build:
+      context: .
+      dockerfile: deploy/web.Dockerfile
+    restart: unless-stopped
+    expose: ["80"]
+    depends_on:
+      - api
+
+  caddy:
+    image: caddy:2.8-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"                     # HTTP, redirected to HTTPS by Caddy
+      - "443:443"                   # HTTPS
+      - "443:443/udp"               # HTTP/3
+    environment:
+      DOMAIN: ${DOMAIN:?set DOMAIN in .env}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data            # certificates: keep this volume, or Let's Encrypt rate limits apply
+      - caddy_config:/config
+    depends_on:
+      - web
+
+volumes:
+  app_data:
+  app_models:
+  caddy_data:
+  caddy_config:

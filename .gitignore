@@ -2,5 +2,10 @@ __pycache__/
 *.pyc
 data/app.db
 data/uploads/
-models/tomato_cnn_v*.h5
+models/tomato_mobilenetv2_v*.keras
 .venv/
+.env
+results/
+
+notebook_work/
+

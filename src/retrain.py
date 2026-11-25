@@ -1,59 +1,84 @@
-"""Retraining pipeline: DB -> training folder -> preprocessing -> fine-tune -> evaluate -> new model version."""
+"""Retraining pipeline used by the web app: uploads -> training folder -> preprocessing -> fine-tune -> evaluate -> new version.
+
+It uses exactly the same functions as the training notebook (src/preprocessing.py and src/model.py):
+the same decoding and resizing, the same augmentation, the same hash-based train/validation split, the same
+class-weighted loss and the same metrics. Only the head is fine-tuned, with a small learning rate.
+"""
 import os
 import shutil
 
-from src.model import compile_model, evaluate_model, load_trained
-from src.preprocessing import load_test, load_train_val, prepare
+import tensorflow as tf
+
+from src.model import (EpochMetrics, balanced_class_weights, compile_model, evaluate_dataset, load_trained)
+from src.preprocessing import count_per_class, labelled_items, make_dataset, split_train_validation
+
+RETRAIN_LEARNING_RATE = 1e-4
+RETRAIN_PATIENCE = 3
 
 
-def retrain(db, service, train_dir, test_dir, models_dir, epochs=8, lr=1e-4, on_progress=None):
-    """Fine-tune the current model on all pending uploads stored in the database.
+def retrain(database, model_service, training_folder, test_folder, models_folder, epochs=8,
+            learning_rate=RETRAIN_LEARNING_RATE, on_progress=None):
+    """Fine-tune the current model's head on every pending upload stored in the database."""
+    report_progress = on_progress or (lambda **details: None)
 
-    1. read the pending uploads from the database and add them to the training folder
-    2. preprocess with the same pipeline as the first training (resize, augmentation on training only)
-    3. continue training the current model with a small learning rate (fine-tuning, not starting over)
-    4. evaluate before and after on the untouched test set
-    5. save a new model version, store its metrics in the database and hot-swap it into the API
-    """
-    import tensorflow as tf
-    progress = on_progress or (lambda **kw: None)
+    pending_uploads = database.pending_uploads()
+    if not pending_uploads:
+        raise ValueError("No new uploaded photos to retrain on. Upload some photos first.")
 
-    pending = db.pending_uploads()
-    if not pending:
-        raise ValueError("No new uploaded images to retrain on. Upload some images first.")
+    class_names = list(model_service.class_names)
+    number_of_classes = len(class_names)
 
-    progress(message=f"Adding {len(pending)} uploaded images to the training data")
-    for row in pending:
-        dest_dir = os.path.join(train_dir, row["label"])
-        os.makedirs(dest_dir, exist_ok=True)
-        shutil.copy(row["stored_path"], os.path.join(dest_dir, f"new_{row['id']}_{row['filename']}"))
+    report_progress(message=f"Adding {len(pending_uploads)} uploaded photos to the training data")
+    for upload in pending_uploads:
+        class_folder = os.path.join(training_folder, upload["label"])
+        os.makedirs(class_folder, exist_ok=True)
+        copied_path = os.path.join(class_folder, f"new_{upload['id']}_{os.path.basename(upload['stored_path'])}")
+        if not os.path.exists(copied_path):
+            shutil.copy(upload["stored_path"], copied_path)
 
-    progress(message="Preprocessing images")
-    train_ds, val_ds = load_train_val(train_dir)
-    train_ds, val_ds = prepare(train_ds, augment=True), prepare(val_ds)
-    test_ds = load_test(test_dir)
+    all_training_items = labelled_items(training_folder, class_names)
+    training_items, validation_items = split_train_validation(all_training_items, training_folder)
+    test_items = labelled_items(test_folder, class_names)
+    class_weights = balanced_class_weights(count_per_class(all_training_items, number_of_classes))
 
-    progress(message="Loading the current model and measuring it before retraining")
-    model = load_trained(service.model_path)
-    compile_model(model, lr)
-    before = evaluate_model(model, test_ds)
+    report_progress(message="Preparing the photos")
+    training_dataset = make_dataset(training_items, number_of_classes, shuffle=True, augment=True)
+    validation_dataset = make_dataset(validation_items, number_of_classes)
+    training_eval_dataset = make_dataset(training_items, number_of_classes)
+    test_dataset = make_dataset(test_items, number_of_classes)
+    training_labels = [class_index for _, class_index in training_items]
+    validation_labels = [class_index for _, class_index in validation_items]
+    test_labels = [class_index for _, class_index in test_items]
 
-    class Report(tf.keras.callbacks.Callback):
-        def on_epoch_end(self, epoch, logs=None):
-            progress(message=f"Training: epoch {epoch + 1}/{epochs}", epoch=epoch + 1,
-                     train_acc=float(logs.get("accuracy", 0)), val_acc=float(logs.get("val_accuracy", 0)))
+    report_progress(message="Loading the current model and measuring it before retraining")
+    model = load_trained(model_service.model_path)
+    compile_model(model, learning_rate=learning_rate, class_weights=class_weights)
+    scores_before = evaluate_dataset(model, test_dataset, test_labels, class_weights)
 
-    progress(message="Training", epoch=0, total_epochs=epochs)
-    model.fit(train_ds, validation_data=val_ds, epochs=epochs, verbose=2,
-              callbacks=[tf.keras.callbacks.EarlyStopping(monitor="val_loss", patience=3, restore_best_weights=True),
-                         Report()])
+    def report_epoch(epoch_row):
+        report_progress(message=f"Training: epoch {epoch_row['epoch']}/{epochs}", epoch=epoch_row["epoch"],
+                        total_epochs=epochs, accuracy=epoch_row["accuracy"],
+                        val_accuracy=epoch_row["val_accuracy"], val_precision=epoch_row["val_precision"],
+                        val_recall=epoch_row["val_recall"], val_f1_score=epoch_row["val_f1_score"],
+                        val_roc_auc=epoch_row["val_roc_auc"])
 
-    progress(message="Evaluating the retrained model")
-    after = evaluate_model(model, test_ds)
+    epoch_metrics = EpochMetrics(training_eval_dataset, training_labels, validation_dataset, validation_labels,
+                                 class_weights, on_epoch_finished=report_epoch, print_each_epoch=False)
+    report_progress(message="Training", epoch=0, total_epochs=epochs)
+    model.fit(training_dataset, validation_data=validation_dataset, epochs=epochs, verbose=0, shuffle=False,
+              callbacks=[epoch_metrics,
+                         tf.keras.callbacks.EarlyStopping(monitor="val_loss", patience=RETRAIN_PATIENCE,
+                                                          restore_best_weights=True)])
 
-    version_path = os.path.join(models_dir, f"tomato_cnn_v{len(db.model_history()) + 1}.h5")
-    model.save(version_path)
-    db.add_model_version(version_path, after, n_new=len(pending), make_current=True)
-    db.mark_used([r["id"] for r in pending])
-    service.load(version_path)
-    return {"before": before, "after": after, "new_images": len(pending), "model_path": version_path}
+    report_progress(message="Evaluating the retrained model")
+    scores_after = evaluate_dataset(model, test_dataset, test_labels, class_weights)
+
+    new_version_path = os.path.join(models_folder,
+                                    f"tomato_mobilenetv2_v{len(database.model_history()) + 1}.keras")
+    model.save(new_version_path)
+    database.add_model_version(new_version_path, scores_after, n_new=len(pending_uploads), make_current=True)
+    database.mark_used([upload["id"] for upload in pending_uploads])
+    model_service.load(new_version_path)
+    return {"before": scores_before, "after": scores_after, "new_images": len(pending_uploads),
+            "model_path": new_version_path,
+            "class_weights": dict(zip(class_names, class_weights)), "epochs": epoch_metrics.history_rows}

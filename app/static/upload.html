@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Upload photos · Tomato Leaf Check</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="static/styles.css?v=3">
+</head>
+<body>
+<header id="topbar" class="topbar"></header>
+
+<main class="page">
+  <div class="container">
+    <div class="page-head">
+      <div class="kicker">Add photos</div>
+      <h1 class="page-title">Add labelled photos</h1>
+      <p class="page-lead">Photos wait here until you retrain the model on them. Each photo is stored with your username, so every upload can be traced.</p>
+    </div>
+
+    <div class="grid-2">
+      <section class="card" aria-labelledby="formHeading">
+        <h2 id="formHeading" class="block-title">New photos</h2>
+        <p class="block-note">All photos in one upload belong to the class you choose.</p>
+
+        <fieldset class="mb-4" style="border:0;padding:0;margin:0 0 22px">
+          <legend class="field-label">Class of these photos</legend>
+          <div class="class-choice" id="classChoice"></div>
+        </fieldset>
+
+        <div class="mb-3">
+          <label class="field-label" for="usernameInput">Your username</label>
+          <input class="text-input" id="usernameInput" maxlength="32" autocomplete="username" placeholder="for example ana.k">
+          <div class="field-hint">2 to 32 characters: letters, digits, dot, underscore or hyphen.</div>
+        </div>
+
+        <div class="dropzone is-compact" id="dropzone" role="button" tabindex="0" aria-label="Choose photos to upload">
+          <input type="file" id="photoInput" accept="image/jpeg,image/png" multiple class="visually-hidden">
+          <div>
+            <strong>Drop photos here</strong>
+            <span>or click to choose several JPG or PNG files</span>
+          </div>
+        </div>
+
+        <ul class="file-list" id="fileList"></ul>
+
+        <div class="photo-meta" style="justify-content:flex-start;gap:10px">
+          <button type="button" class="btn btn-primary" id="uploadButton" disabled>Upload photos</button>
+          <button type="button" class="btn btn-ghost" id="clearButton" disabled>Clear</button>
+        </div>
+        <div class="message is-ok" id="uploadOk" role="status" hidden></div>
+        <div class="message is-warn" id="uploadRejected" role="alert" hidden></div>
+        <div class="message is-error" id="uploadError" role="alert" hidden></div>
+      </section>
+
+      <div class="stack">
+        <section class="card" aria-labelledby="waitingHeading">
+          <h2 id="waitingHeading" class="block-title">Waiting for retraining</h2>
+          <p class="block-note" id="waitingNote">Loading</p>
+          <ul class="waiting-list" id="waitingList"></ul>
+          <div class="small muted" style="margin-top:14px"><a href="retrain.html">Go to retraining</a></div>
+        </section>
+      </div>
+    </div>
+
+    <section class="section-gap" aria-labelledby="recentHeading">
+      <h2 id="recentHeading" class="block-title">Recent uploads</h2>
+      <p class="block-note">The 20 most recent photos, with who uploaded them.</p>
+      <div class="card" style="padding:8px 26px">
+        <div class="table-wrap">
+          <table class="data">
+            <thead><tr><th>File</th><th>Class</th><th>Uploaded by</th><th>When</th><th>Status</th></tr></thead>
+            <tbody id="recentBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </div>
+</main>
+
+<footer id="footer" class="footer"></footer>
+
+<script src="static/common.js?v=3"></script>
+<script src="static/upload.js?v=3"></script>
+</body>
+</html>
