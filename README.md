@@ -112,7 +112,7 @@ The live app runs on an AWS EC2 instance (Ubuntu 26.04, eu-north-1). It uses an 
    ```
 5. Caddy gets the HTTPS certificate for the name automatically. Check its log with `sudo docker compose -f docker-compose.prod.yml logs caddy`, and look for a line saying the certificate was obtained.
 
-Keep the instance running, because the public link only works while it is. The public address is https://tomatoleaf.duckdns.org.
+Keep the instance running, because the public link only works while it is. The public address is https://tomatoleaf.duckdns.org. Browsers show the connection as secure, and the certificate is valid.
 
 ## Pages and API
 
