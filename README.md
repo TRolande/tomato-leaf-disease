@@ -94,6 +94,26 @@ docker compose -f docker-compose.prod.yml up -d --build
 
 Open https://localhost and accept the certificate warning (the certificate is local). For a server, set `DOMAIN` to a hostname that points at it. Caddy obtains the certificate automatically, and ports 80 and 443 must be open. Data is stored in the named volumes `app_data` and `app_models`, so it survives restarts and rebuilds. Keep the `caddy_data` volume, or Let's Encrypt rate limits apply.
 
+### 5. Deploy on AWS
+
+The live app runs on an AWS EC2 instance (Ubuntu 26.04, eu-north-1). It uses an Elastic IP and a free DuckDNS name, so it needs no paid domain.
+
+1. Launch an instance with a key pair. Open ports 22 (SSH), 80 and 443 in its security group.
+2. Allocate an **Elastic IP** and associate it with the instance (here 13.61.54.133).
+3. On duckdns.org, create a name (here `tomatoleaf.duckdns.org`) and set its IP to the Elastic IP.
+4. Connect to the instance, then run:
+   ```bash
+   sudo apt update && sudo apt install -y docker.io docker-compose-v2 git
+   sudo usermod -aG docker ubuntu
+   git clone https://github.com/TRolande/tomato-leaf-disease.git
+   cd tomato-leaf-disease
+   echo "DOMAIN=tomatoleaf.duckdns.org" > .env
+   sudo docker compose -f docker-compose.prod.yml up -d --build
+   ```
+5. Caddy gets the HTTPS certificate for the name automatically. Check its log with `sudo docker compose -f docker-compose.prod.yml logs caddy`, and look for a line saying the certificate was obtained.
+
+Keep the instance running, because the public link only works while it is. The public address is https://tomatoleaf.duckdns.org.
+
 ## Pages and API
 
 | Page | Address | What it does |
