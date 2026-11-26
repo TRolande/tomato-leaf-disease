@@ -1,6 +1,6 @@
 """FastAPI backend: prediction, bulk upload with uploader name, retraining, dataset insights and health.
 
-Run from the repository root:  uvicorn tomato_leaf_checking_app.api:app --host 0.0.0.0 --port 8000 --workers 1
+Run from the repository root:  uvicorn app.api:app --host 0.0.0.0 --port 8000 --workers 1
 One worker only: the model, the SQLite database and the retraining thread live in this process.
 """
 import json
@@ -76,14 +76,14 @@ async def lifespan(app):
 
 
 app = FastAPI(title="Tomato Leaf Disease API", lifespan=lifespan)
-app.mount("/static", StaticFiles(directory=str(ROOT / "tomato_leaf_checking_app" / "static")), name="static")
+app.mount("/static", StaticFiles(directory=str(ROOT / "app" / "static")), name="static")
 
 
 PAGES = ["index.html", "dataset.html", "upload.html", "retrain.html"]
 
 
 def _page(name):
-    return FileResponse(ROOT / "tomato_leaf_checking_app" / "static" / name)
+    return FileResponse(ROOT / "app" / "static" / name)
 
 
 @app.get("/")
