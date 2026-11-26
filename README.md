@@ -4,7 +4,7 @@ A web app that looks at a photo of a tomato leaf and says which of four conditio
 
 | | |
 |---|---|
-| **Demo video** | TODO: add the link |
+| **Demo video** | https://youtu.be/HIDdQSXobRo |
 | **Live URL** | https://tomatoleaf.duckdns.org |
 | **Dataset** | PlantVillage tomato leaves (Kaggle), colour version, four classes |
 
