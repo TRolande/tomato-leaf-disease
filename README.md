@@ -149,10 +149,14 @@ Usernames are 2 to 32 characters: letters, digits, `.`, `_` and `-`. Photos must
 
 The app was tested with Locust. Each simulated user uploads a leaf photo to `/api/predict` and checks `/api/health`, with a short pause between requests. Two runs were made, with the same script.
 
-| Run | Server | Users (new per second) | Duration | Requests | Failures | Prediction median | Prediction 95th percentile | Requests per second (all) |
-|---|---|---|---|---|---|---|---|---|
-| Live site | AWS EC2, 2 vCPUs, one API process | 50 (5/s) | 90 s | 446 | 395 (88.6 %, `502 Bad Gateway`) | 0.30 s | 51 s | 6.38 |
-| Local Docker | this computer, one API process | 10 (2/s) | 90 s | 20 | 0 | 82 s | 86 s | 0.23 |
+| Run | Request | Requests | Failures | Median | 95th percentile | Requests per second |
+|---|---|---|---|---|---|---|
+| Live site, 50 users (5 per second) | Prediction | 370 | 338 (91.4 %) | 300 ms | 51000 ms | 5.29 |
+| Live site, 50 users (5 per second) | Health check | 76 | 57 (75.0 %) | 280 ms | 1100 ms | 1.09 |
+| Local Docker, 10 users (2 per second) | Prediction | 13 | 0 (0.0 %) | 82000 ms | 86000 ms | 0.15 |
+| Local Docker, 10 users (2 per second) | Health check | 7 | 0 (0.0 %) | 6 ms | 9900 ms | 0.08 |
+
+Each run was 90 seconds. The live server ran on AWS EC2 with 2 vCPUs and one API process. The local run used this computer with one API process.
 
 **What it shows.** A single prediction takes well under a second when the server is not busy. Under load, the requests queue up behind the TensorFlow model, which runs one prediction at a time per process. The live server could not keep up with 50 users, and its web server returned `502 Bad Gateway` for most requests. It recovered after a restart. Locally, 10 users already cause queuing, although nothing failed.
 
