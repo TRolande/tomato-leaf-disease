@@ -35,8 +35,8 @@ src/prediction.py                    loads the live model and predicts one photo
 src/retrain.py                       retraining run used by the web app
 src/uploads.py                       upload validation, EXIF metadata and file hash
 src/database.py                      SQLite tables: uploads, model versions, retraining runs and their epochs
-app/api.py                           FastAPI backend and page routes
-app/static/                          the four pages (index, dataset, upload, retrain), styles.css and their scripts
+tomato_leaf_checking_app/api.py      FastAPI backend and page routes
+tomato_leaf_checking_app/static/ the four pages (index, dataset, upload, retrain), styles.css and their scripts
 models/                              tomato_mobilenetv2.keras, class_names.json, class_weights.json, metrics.json
 data/train, data/test                sample photos for the dashboard and for retraining
 Dockerfile, .dockerignore            API container image
@@ -64,7 +64,7 @@ Run the notebook (Colab, Kaggle or your own machine). Copy `tomato_mobilenetv2.k
 python -m venv .venv
 .venv\Scripts\activate
 pip install -r requirements.txt
-python -m uvicorn app.api:app --host 127.0.0.1 --port 8000 --workers 1
+python -m uvicorn tomato_leaf_checking_app.api:app --host 127.0.0.1 --port 8000 --workers 1
 ```
 
 Open http://localhost:8000. Use `--workers 1`: the model, the database and the retraining thread all run in that one process.
