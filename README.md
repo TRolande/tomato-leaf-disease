@@ -145,6 +145,21 @@ Usernames are 2 to 32 characters: letters, digits, `.`, `_` and `-`. Photos must
 - **Uploaded photos carry the username.** It is written into each JPEG's EXIF metadata, so keep that in mind when sharing the files.
 - The notebook's data split is by photo. The notebook's duplicate check reports how many test photos have a near copy in the training set; check that number before quoting the test results.
 
+## Flood request simulation (Locust)
+
+The app was tested with Locust. Each simulated user uploads a leaf photo to `/api/predict` and checks `/api/health`, with a short pause between requests. Two runs were made, with the same script.
+
+| Run | Server | Users (new per second) | Duration | Requests | Failures | Prediction median | Prediction 95th percentile | Requests per second (all) |
+|---|---|---|---|---|---|---|---|---|
+| Live site | AWS EC2, 2 vCPUs, one API process | 50 (5/s) | 90 s | 446 | 395 (88.6 %, `502 Bad Gateway`) | 0.30 s | 51 s | 6.38 |
+| Local Docker | this computer, one API process | 10 (2/s) | 90 s | 20 | 0 | 82 s | 86 s | 0.23 |
+
+**What it shows.** A single prediction takes well under a second when the server is not busy. Under load, the requests queue up behind the TensorFlow model, which runs one prediction at a time per process. The live server could not keep up with 50 users, and its web server returned `502 Bad Gateway` for most requests. It recovered after a restart. Locally, 10 users already cause queuing, although nothing failed.
+
+**Limits and next steps.** The app is limited by CPU and by running a single process. Handling heavy traffic would need a bigger instance, several API workers with enough memory, or a request queue in front of the model.
+
+The raw Locust output is saved in `results/`, which Git does not track.
+
 ## Kaggle
 
 The notebook runs on Colab, on Kaggle, or on your own machine. On Kaggle, attach the `plant-village` dataset, and turn on the GPU and internet. To publish it as a kernel, put your username in `kaggle/kernel-metadata.json` and run `bash scripts/push_to_kaggle.sh`.
