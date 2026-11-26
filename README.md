@@ -43,11 +43,11 @@ Dockerfile, .dockerignore            API container image
 docker-compose.prod.yml              production stack: Caddy (HTTPS) -> nginx (pages and /api) -> API
 Caddyfile                            HTTPS and reverse proxy settings
 deploy/                              nginx configuration and its image
-docker-compose.yml, nginx.conf       local stack with two API containers, used for the load test
-locust/, scripts/                    load test (Locust) and the script that runs it
+docker-compose.yml, nginx.conf       local stack with two API containers
+locust/, scripts/                    load test files (Locust) and the script that runs it
 kaggle/, scripts/push_to_kaggle.sh   Kaggle kernel settings and the script that publishes the notebook
 requirements.txt                     runtime packages
-requirements-dev.txt                 adds Locust for the load test
+requirements-dev.txt                 adds Locust
 ```
 
 `data/app.db` (the database) and `data/uploads/` are created at runtime and are not in Git.
@@ -124,21 +124,6 @@ Usernames are 2 to 32 characters: letters, digits, `.`, `_` and `-`. Photos must
 - **One process.** Run one API worker. The model, the database and the retraining thread all live in that process, and SQLite is not shared across containers. Keep one `api` container.
 - **Uploaded photos carry the username.** It is written into each JPEG's EXIF metadata, so keep that in mind when sharing the files.
 - The notebook's data split is by photo. The notebook's duplicate check reports how many test photos have a near copy in the training set; check that number before quoting the test results.
-
-## Load test (Locust)
-
-The load test is not run yet. The table below is empty until it is.
-
-```powershell
-pip install -r requirements-dev.txt
-bash scripts/run_locust_experiments.sh     # 1, 2 and 4 containers, 50 users, 90 s each; CSVs go to results/
-```
-
-| Containers | Requests | Requests/s | Median latency (ms) | 95th percentile (ms) | Failures |
-|---|---|---|---|---|---|
-| 1 | | | | | |
-| 2 | | | | | |
-| 4 | | | | | |
 
 ## Kaggle
 
